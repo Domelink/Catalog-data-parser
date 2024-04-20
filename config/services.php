@@ -31,4 +31,8 @@ return [
         ],
     ],
 
+    'dropbox' => [
+        'file' => env('API_URL'),
+    ],
+
 ];
