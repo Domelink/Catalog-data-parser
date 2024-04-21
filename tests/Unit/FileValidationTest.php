@@ -25,17 +25,22 @@ final class FileValidationTest extends TestCase
         unlink($testFilePath);
     }
 
-    public function testItFailsForFilenameEndingWithSlash()
+    public function testItFailsForNonXlsxFiles()
     {
         $rule = new FileValidation(5);
 
-        $filename = '/';
-        $failureMessage = '';
+        $testFilename = __DIR__ . '/test_file.txt';
+        file_put_contents($testFilename, 'Some content');
 
-        $rule->validate('file', $filename, function ($message) use (&$failureMessage) {
+        $fileInfo = finfo_open(FILEINFO_MIME_TYPE);
+        finfo_close($fileInfo);
+
+        $failureMessage = '';
+        $rule->validate('file', $testFilename, function ($message) use (&$failureMessage) {
             $failureMessage = $message;
         });
 
-        $this->assertEquals('Invalid file name: Slash.', $failureMessage);
+        $this->assertEquals('The file must be a valid .xlsx file.', $failureMessage);
+        unlink($testFilename);
     }
 }
