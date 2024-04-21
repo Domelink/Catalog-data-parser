@@ -24,9 +24,12 @@ final class FileValidation implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        if (str_ends_with($value, '/')) {
-            $fail('Invalid file name: Slash.');
-            return;
+        $fileInfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_file($fileInfo, $value);
+        finfo_close($fileInfo);
+
+        if ($mimeType !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+            $fail('The file must be a valid .xlsx file.');
         }
 
         if (file_exists($value) && filesize($value) > $this->maxSize * 1024) {
