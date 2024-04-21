@@ -8,11 +8,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class Categories extends Model
 {
-    use HasUuids;
-
     protected $table = 'categories';
 
-    protected $primaryKey = 'uuid';
+    protected $primaryKey = 'id';
 
     /**
      * The attributes that are mass assignable.
@@ -30,6 +28,6 @@ final class Categories extends Model
      */
     public function products(): HasMany
     {
-        return $this->hasMany(Products::class, 'category_uuid', 'uuid');
+        return $this->hasMany(Products::class, 'category_id', 'id');
     }
 }

@@ -8,11 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class Products extends Model
 {
-    use HasUuids;
-
     protected $table = 'products';
 
-    protected $primaryKey = 'uuid';
+    protected $primaryKey = 'id';
 
     /**
      * The attributes that are mass assignable.
@@ -21,7 +19,7 @@ final class Products extends Model
      */
     protected $fillable = [
         'type',
-        'category_uuid',
+        'category_id',
         'manufacturer',
         'name',
         'code_of_model',
@@ -38,6 +36,6 @@ final class Products extends Model
      */
     public function category(): BelongsTo
     {
-        return $this->belongsTo(Categories::class, 'category_uuid', 'uuid');
+        return $this->belongsTo(Categories::class, 'category_id', 'id');
     }
 }

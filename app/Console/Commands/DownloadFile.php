@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use ZipArchive;
 use App\Rules\FileValidation;
 use Illuminate\Console\Command;
+use App\Jobs\ParseDataToCatalogJob;
 use Illuminate\Support\Facades\Http;
 
 final class DownloadFile extends Command
@@ -55,7 +56,10 @@ final class DownloadFile extends Command
 
                     if ($validationPassed) {
                         $zip->extractTo($extractPath, $filename);
-                        $this->info('Extracted: ' . $filename);
+
+                        ParseDataToCatalogJob::dispatch($filePath);
+
+                        $this->info('Extracted: ' . $filename . ' and started to dispatch data to DB');
                     }
                 }
                 $zip->close();
