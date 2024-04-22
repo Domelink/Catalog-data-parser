@@ -2,14 +2,15 @@
 
 namespace App\Imports;
 
-use App\Models\Products;
-use App\Models\Categories;
+use App\Enums\RowKeysType;
+use App\DTO\ProductDataDto;
+use App\Services\ImportService;
+use App\DTO\ProductOffsetDataDto;
 use Illuminate\Support\Collection;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-
 
 final class ImportCatalog implements ToCollection, WithHeadingRow
 {
@@ -29,11 +30,6 @@ final class ImportCatalog implements ToCollection, WithHeadingRow
     private int $duplicates = 0;
 
     /**
-     * Cache for category instances to avoid redundant database queries.
-     */
-    private array $categoriesCache = [];
-
-    /**
      * Constructor loads the Excel spreadsheet.
      */
     public function __construct(string $filePath)
@@ -48,63 +44,27 @@ final class ImportCatalog implements ToCollection, WithHeadingRow
      */
     public function collection(Collection $collection): void
     {
+        $importService = resolve(ImportService::class);
         foreach ($collection as $index => $row) {
+            // Compensates for the heading row in the worksheet. Data starts from the second row, hence index + 2.
             $currentRowNumber = $index + 2;
             $columnAValue = $this->worksheet->getCell('A' . $currentRowNumber)->getValue();
 
-            $additionalInfo = $row[10] ?? null;
+            // Retrieves additional info from column index 10 if present; used to check for shifted data entries.
+            $additionalInfo = $row[10] ?? null;//todo comment
 
-            $type = $columnAValue ?? $row['rubrika'] ?? $row['kategoriia_tovara'];
-            $categoryKey = $additionalInfo ? $row['proizvoditel'] : $row['kategoriia_tovara'];
-
-            if (!isset($this->categoriesCache[$categoryKey])) {
-                $this->categoriesCache[$categoryKey] = Categories::firstOrCreate(
-                    [
-                        'categories' => $categoryKey
-                    ],
-                    [
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ]
-                );
-            }
+            $type = $columnAValue ?? $row[RowKeysType::TYPE->value] ?? $row[RowKeysType::CATEGORY_TITLE->value];
+            $categoryKey = $additionalInfo ? $row[RowKeysType::MANUFACTURER->value] : $row[RowKeysType::CATEGORY_TITLE->value];
+            $category = $importService->getCategory($categoryKey);
 
             if (!empty($additionalInfo)) {
-                $product = Products::firstOrCreate(
-                    [
-                        'code_of_model' => $row['opisanie_tovara']
-                    ],
-                    [
-                        'type' => $type,
-                        'name' => $row['proizvoditel'],
-                        'category_id' => $this->categoriesCache[$categoryKey]->id,
-                        'manufacturer' => $row['naimenovanie_tovara'],
-                        'description' => $row['cena_rozn_grn'],
-                        'price' => floatval($row['garantiia']),
-                        'guaranty' => is_numeric($row['nalicie']) ? intval($row['nalicie']) : null,
-                        'availability' => ($additionalInfo === 'есть в наличие'),
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ]
-                );
+                $dto = ProductOffsetDataDto::fromArray($row->toArray(), $type, $category, $additionalInfo);
+
+                $product = $importService->importOffsetData($dto);
             } else {
-                $product = Products::firstOrCreate(
-                    [
-                        'code_of_model' => $row['kod_modeli_artikul_proizvoditelia']
-                    ],
-                    [
-                        'type' => $type,
-                        'name' => $row['naimenovanie_tovara'],
-                        'category_id' => $this->categoriesCache[$categoryKey]->id,
-                        'manufacturer' => $row['proizvoditel'],
-                        'description' => $row['opisanie_tovara'],
-                        'price' => floatval($row['cena_rozn_grn']),
-                        'guaranty' => is_numeric($row['garantiia']) ? intval($row['garantiia']) : null,
-                        'availability' => ($row['nalicie'] === 'есть в наличие'),
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ]
-                );
+                $dto = ProductDataDto::fromArray($row->toArray(), $type, $category);
+
+                $product = $importService->importData($dto);
             }
 
             if ($product->wasRecentlyCreated) {

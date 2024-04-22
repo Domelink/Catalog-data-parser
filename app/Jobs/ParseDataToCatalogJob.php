@@ -10,11 +10,8 @@ final class ParseDataToCatalogJob extends BaseJob
     /**
      * Path to the Excel file.
      */
-    protected string $filePath;
-
-    public function __construct(string $filePath)
+    public function __construct(private readonly string $filePath)
     {
-        $this->filePath = $filePath;
     }
 
     /**
