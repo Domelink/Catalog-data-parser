@@ -6,7 +6,7 @@
 
 1) Clone the repository using:
 
-    ``` git clone <link to the GitHub repository>```
+    ```git clone <link to the GitHub repository>](https://github.com/Domelink/Catalog-data-parser.git```
 
 
 2) Lift the Docker containers using Laravel Sail:
