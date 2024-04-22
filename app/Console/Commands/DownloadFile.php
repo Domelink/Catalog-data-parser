@@ -2,11 +2,11 @@
 
 namespace App\Console\Commands;
 
-use ZipArchive;
 use App\Rules\FileValidation;
+use App\Services\HttpService;
 use Illuminate\Console\Command;
+use App\Services\ZipArchiveService;
 use App\Jobs\ParseDataToCatalogJob;
-use Illuminate\Support\Facades\Http;
 
 final class DownloadFile extends Command
 {
@@ -24,6 +24,13 @@ final class DownloadFile extends Command
      */
     protected $description = 'Command for download and extract specific xlsx file, then delete the zip archive.';
 
+    private const maxFileSize = 5120;
+
+    public function __construct(private readonly HttpService $httpService, private readonly ZipArchiveService $zipArchiveService)
+    {
+        parent::__construct();
+    }
+
     /**
      * Execute the console command.
      *
@@ -34,42 +41,14 @@ final class DownloadFile extends Command
         $url = config('services.dropbox.file');
         $zipPath = storage_path('app/public/catalog_for_test.zip');
         $extractPath = storage_path('app/public');
-        $fileValidation = new FileValidation(5120);
+        $fileValidation = new FileValidation(self::maxFileSize);
 
-        $response = Http::get($url);
-        if ($response->successful()) {
-            file_put_contents($zipPath, $response->body());
-            $this->info('ZIP file downloaded and saved successfully.');
-
-            $zip = new ZipArchive;
-            if ($zip->open($zipPath) === TRUE) {
-                $this->info('Inspecting files inside the zip:');
-                for ($i = 0; $i < $zip->numFiles; $i++) {
-                    $filename = $zip->getNameIndex($i);
-                    $filePath = $extractPath . '/' . $filename;
-
-                    $validationPassed = true;
-                    $fileValidation->validate('file', $filePath, function ($message) use (&$validationPassed) {
-                        $this->error($message);
-                        $validationPassed = false;
-                    });
-
-                    if ($validationPassed) {
-                        $zip->extractTo($extractPath, $filename);
-
-                        ParseDataToCatalogJob::dispatch($filePath);
-
-                        $this->info('Extracted: ' . $filename . ' and started to dispatch data to DB');
-                    }
-                }
-                $zip->close();
-                unlink($zipPath);
-                $this->info('All required files extracted successfully to ' . $extractPath . ' ZIP file deleted successfully.');
-            } else {
-                $this->error('Failed to open ZIP file.');
-            }
+        if ($this->httpService->downloadFile($url, $zipPath)) {
+            $filePath = $this->zipArchiveService->processZip($zipPath, $extractPath, $fileValidation);
+            ParseDataToCatalogJob::dispatch($filePath);
+            $this->info('File extracted successfully, started to dispatch job.');
         } else {
-            $this->error('Failed to download the file. Status code: ' . $response->status());
+            $this->error('Failed to download ZIP file.');
         }
     }
 }

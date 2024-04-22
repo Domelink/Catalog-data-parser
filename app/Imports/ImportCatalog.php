@@ -51,7 +51,7 @@ final class ImportCatalog implements ToCollection, WithHeadingRow
             $columnAValue = $this->worksheet->getCell('A' . $currentRowNumber)->getValue();
 
             // Retrieves additional info from column index 10 if present; used to check for shifted data entries.
-            $additionalInfo = $row[10] ?? null;//todo comment
+            $additionalInfo = $row[10] ?? null;
 
             $type = $columnAValue ?? $row[RowKeysType::TYPE->value] ?? $row[RowKeysType::CATEGORY_TITLE->value];
             $categoryKey = $additionalInfo ? $row[RowKeysType::MANUFACTURER->value] : $row[RowKeysType::CATEGORY_TITLE->value];
