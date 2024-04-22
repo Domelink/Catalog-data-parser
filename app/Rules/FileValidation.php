@@ -6,13 +6,10 @@ use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Translation\PotentiallyTranslatedString;
 
-final class FileValidation implements ValidationRule
+final readonly class FileValidation implements ValidationRule
 {
-    protected mixed $maxSize;
-
-    public function __construct($maxSizeInKilobytes)
+    public function __construct(private int $maxSize)
     {
-        $this->maxSize = $maxSizeInKilobytes;
     }
 
     /**
