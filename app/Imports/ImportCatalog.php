@@ -59,19 +59,24 @@ final class ImportCatalog implements ToCollection, WithHeadingRow
 
             if (!isset($this->categoriesCache[$categoryKey])) {
                 $this->categoriesCache[$categoryKey] = Categories::firstOrCreate(
-                    ['categories' => $categoryKey],
-                    ['created_at' => now(), 'updated_at' => now()]
+                    [
+                        'categories' => $categoryKey
+                    ],
+                    [
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]
                 );
             }
 
             if (!empty($additionalInfo)) {
                 $product = Products::firstOrCreate(
                     [
-                        'name' => $row['proizvoditel'],
                         'code_of_model' => $row['opisanie_tovara']
                     ],
                     [
                         'type' => $type,
+                        'name' => $row['proizvoditel'],
                         'category_id' => $this->categoriesCache[$categoryKey]->id,
                         'manufacturer' => $row['naimenovanie_tovara'],
                         'description' => $row['cena_rozn_grn'],
@@ -85,11 +90,11 @@ final class ImportCatalog implements ToCollection, WithHeadingRow
             } else {
                 $product = Products::firstOrCreate(
                     [
-                        'name' => $row['naimenovanie_tovara'],
                         'code_of_model' => $row['kod_modeli_artikul_proizvoditelia']
                     ],
                     [
                         'type' => $type,
+                        'name' => $row['naimenovanie_tovara'],
                         'category_id' => $this->categoriesCache[$categoryKey]->id,
                         'manufacturer' => $row['proizvoditel'],
                         'description' => $row['opisanie_tovara'],
