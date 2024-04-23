@@ -1,6 +1,6 @@
 <?php
 
-namespace tests\Unit;
+namespace Tests\Unit;
 
 use Tests\TestCase;
 use App\Rules\FileValidation;
@@ -9,38 +9,31 @@ final class FileValidationTest extends TestCase
 {
     public function testItFailsForMaxFileSize()
     {
-        $testFilePath = 'temporaryfile.txt';
-        $testFileSize = 1024 * 1024 + 1;
-        file_put_contents($testFilePath, str_repeat('a', $testFileSize));
+        $testFilename = 'temporaryfile.xlsx';
+        $testFileSize = 1024 * 1024 * 5 + 1;
 
-        $rule = new FileValidation(1024);
+        $rule = new FileValidation(5120);
         $failureMessage = '';
 
-        $rule->validate('testFile', $testFilePath, function ($message) use (&$failureMessage) {
+        $rule->validate($testFilename, $testFileSize, function ($message) use (&$failureMessage) {
             $failureMessage = $message;
         });
 
-        $this->assertEquals('The file exceeds the maximum allowed size of 1024 KB.', $failureMessage);
-
-        unlink($testFilePath);
+        $this->assertEquals('The file exceeds the maximum allowed size of 5120 KB.', $failureMessage);
     }
 
     public function testItFailsForNonXlsxFiles()
     {
-        $rule = new FileValidation(5);
+        $testFilename = 'test_file.txt';
+        $testFileSize = 1024 * 10;
 
-        $testFilename = __DIR__ . '/test_file.txt';
-        file_put_contents($testFilename, 'Some content');
-
-        $fileInfo = finfo_open(FILEINFO_MIME_TYPE);
-        finfo_close($fileInfo);
-
+        $rule = new FileValidation(5120);
         $failureMessage = '';
-        $rule->validate('file', $testFilename, function ($message) use (&$failureMessage) {
+
+        $rule->validate($testFilename, $testFileSize, function ($message) use (&$failureMessage) {
             $failureMessage = $message;
         });
 
         $this->assertEquals('The file must be a valid .xlsx file.', $failureMessage);
-        unlink($testFilename);
     }
 }

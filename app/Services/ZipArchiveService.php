@@ -14,16 +14,15 @@ final readonly class ZipArchiveService implements ZipArchiveServiceInterface
         $zip = new ZipArchive;
         if ($zip->open($zipPath) === TRUE) {
             for ($i = 0; $i < $zip->numFiles; $i++) {
-                $filename = $zip->getNameIndex($i);
-                $filePath = $extractPath . '/' . $filename;
+                $stat = $zip->statIndex($i);
+                $filename = $stat['name'];
+                $fileSize = $stat['size'];
 
-                if (str_ends_with($filename, '/')) {
-                    logger("Skipping directory: {$filename}");
-                    continue;
+                if ($this->validateFile($filename, $fileSize, $fileValidation)) {
+                    $zip->extractTo($extractPath, $filename);
                 }
 
-                $zip->extractTo($extractPath, $filename);
-                $this->validateFile($filePath, $fileValidation);
+                $filePath = $extractPath . '/' . $filename;
             }
             $zip->close();
             unlink($zipPath);
@@ -34,16 +33,16 @@ final readonly class ZipArchiveService implements ZipArchiveServiceInterface
     /**
      * Validates the file using the provided validation rules.
      *
-     * @param string $filePath Path to the file to validate.
      * @param FileValidation $fileValidation Validation rules to apply.
      * @return bool True if validation passes, false otherwise.
      */
-    private function validateFile(string $filePath, FileValidation $fileValidation): void
+    private function validateFile($filename, $fileSize, FileValidation $fileValidation): bool
     {
-        logger($filePath);
-        $fileValidation->validate('file', $filePath, function ($message) use ($filePath) {
+        $validationPassed = true;
+        $fileValidation->validate($filename, $fileSize, function ($message) use (&$validationPassed) {
             logger($message);
-            unlink($filePath);
+            $validationPassed = false;
         });
+        return $validationPassed;
     }
 }
