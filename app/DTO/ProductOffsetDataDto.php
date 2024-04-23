@@ -4,12 +4,12 @@ namespace App\DTO;
 
 use App\Enums\RowKeysType;
 
-final class ProductOffsetDataDto
+final class ProductOffsetDataDto extends BaseImportDto
 {
     public function __construct(
         public string $type,
         public ?string $name,
-        public int $titleId,
+        public int $categoryId,
         public string $manufacturer,
         public string $description,
         public float $price,
@@ -18,18 +18,18 @@ final class ProductOffsetDataDto
         public ?string $codeOfModel,
     ) {}
 
-    public static function fromArray(array $row, $type, $category, $additionalInfo): self
+    public static function fromArray(array $params): self
     {
         return new self(
-            type: ($row[RowKeysType::TYPE->value] = $type),
-            name: $row[RowKeysType::CATEGORY_TITLE->value],
-            titleId: $category->id,
-            manufacturer: $row[RowKeysType::NAME->value],
-            description: $row[RowKeysType::PRICE->value],
-            price: floatval($row[RowKeysType::GUARANTY->value]),
-            guaranty: is_numeric($row[RowKeysType::AVAILABILITY->value]) ? intval($row[RowKeysType::AVAILABILITY->value]) : null,
-            availability: ($additionalInfo === [RowKeysType::AVAILABILITY_TRUE->value]),
-            codeOfModel: $row[RowKeysType::DESCRIPTION->value],
+            type: ($params[RowKeysType::TYPE->value] = $params['type']),
+            name: $params[RowKeysType::CATEGORY_TITLE->value],
+            categoryId: $params['categoryId'],
+            manufacturer: $params[RowKeysType::NAME->value],
+            description: $params[RowKeysType::PRICE->value],
+            price: floatval($params[RowKeysType::GUARANTY->value]),
+            guaranty: is_numeric($params[RowKeysType::AVAILABILITY->value]) ? intval($params[RowKeysType::AVAILABILITY->value]) : null,
+            availability: ($params['additionalInfo'] === [RowKeysType::AVAILABILITY_TRUE->value]),
+            codeOfModel: $params[RowKeysType::DESCRIPTION->value],
         );
     }
 }

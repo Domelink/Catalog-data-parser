@@ -3,10 +3,10 @@
 namespace App\Console\Commands;
 
 use App\Rules\FileValidation;
-use App\Services\HttpService;
 use Illuminate\Console\Command;
-use App\Services\ZipArchiveService;
 use App\Jobs\ParseDataToCatalogJob;
+use App\Interfaces\HttpServiceInterface;
+use App\Interfaces\ZipArchiveServiceInterface;
 
 final class DownloadFile extends Command
 {
@@ -26,7 +26,7 @@ final class DownloadFile extends Command
 
     private const maxFileSize = 5120;
 
-    public function __construct(private readonly HttpService $httpService, private readonly ZipArchiveService $zipArchiveService)
+    public function __construct(private readonly HttpServiceInterface $httpService, private readonly ZipArchiveServiceInterface $zipArchiveService)
     {
         parent::__construct();
     }
@@ -39,7 +39,7 @@ final class DownloadFile extends Command
     public function handle(): void
     {
         $url = config('services.dropbox.file');
-        $zipPath = storage_path('app/public/catalog_for_test.zip');
+        $zipPath = storage_path('app/public/catalog.zip');
         $extractPath = storage_path('app/public');
         $fileValidation = new FileValidation(self::maxFileSize);
 

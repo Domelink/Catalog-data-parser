@@ -4,10 +4,10 @@ namespace App\Imports;
 
 use App\Enums\RowKeysType;
 use App\DTO\ProductDataDto;
-use App\Services\ImportService;
 use App\DTO\ProductOffsetDataDto;
 use Illuminate\Support\Collection;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use App\Interfaces\ImportServiceInterface;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
@@ -44,7 +44,7 @@ final class ImportCatalog implements ToCollection, WithHeadingRow
      */
     public function collection(Collection $collection): void
     {
-        $importService = resolve(ImportService::class);
+        $importService = resolve(ImportServiceInterface::class);
         foreach ($collection as $index => $row) {
             // Compensates for the heading row in the worksheet. Data starts from the second row, hence index + 2.
             $currentRowNumber = $index + 2;
@@ -55,16 +55,25 @@ final class ImportCatalog implements ToCollection, WithHeadingRow
 
             $type = $columnAValue ?? $row[RowKeysType::TYPE->value] ?? $row[RowKeysType::CATEGORY_TITLE->value];
             $categoryKey = $additionalInfo ? $row[RowKeysType::MANUFACTURER->value] : $row[RowKeysType::CATEGORY_TITLE->value];
-            $category = $importService->getCategory($categoryKey);
+            $categoryId = $importService->getCategory($categoryKey)->id;
 
             if (!empty($additionalInfo)) {
-                $dto = ProductOffsetDataDto::fromArray($row->toArray(), $type, $category, $additionalInfo);
-
-                $product = $importService->importOffsetData($dto);
+                $product = $importService->importOffsetData(
+                    ProductOffsetDataDto::fromArray(
+                        array_merge($row->toArray(), [
+                            'type' => $type,
+                            'categoryId' => $categoryId,
+                            'additionalInfo' => $additionalInfo
+                        ]))
+                );
             } else {
-                $dto = ProductDataDto::fromArray($row->toArray(), $type, $category);
-
-                $product = $importService->importData($dto);
+                $product = $importService->importData(
+                    ProductDataDto::fromArray(
+                        array_merge($row->toArray(), [
+                            'type' => $type,
+                            'categoryId' => $categoryId,
+                        ]))
+                );
             }
 
             if ($product->wasRecentlyCreated) {
