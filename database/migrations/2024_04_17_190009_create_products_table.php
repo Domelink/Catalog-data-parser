@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('type');
             $table->string('manufacturer');
             $table->string('name')->nullable();
-            $table->string('code_of_model')->nullable();
+            $table->string('code_of_model')->unique();
             $table->longText('description');
             $table->float('price');
             $table->integer('guaranty')->nullable();
