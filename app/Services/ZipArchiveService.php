@@ -17,9 +17,13 @@ final readonly class ZipArchiveService implements ZipArchiveServiceInterface
                 $filename = $zip->getNameIndex($i);
                 $filePath = $extractPath . '/' . $filename;
 
-                if ($this->validateFile($filePath, $fileValidation)) {
-                    $zip->extractTo($extractPath, $filename);
+                if (str_ends_with($filename, '/')) {
+                    logger("Skipping directory: {$filename}");
+                    continue;
                 }
+
+                $zip->extractTo($extractPath, $filename);
+                $this->validateFile($filePath, $fileValidation);
             }
             $zip->close();
             unlink($zipPath);
@@ -34,13 +38,12 @@ final readonly class ZipArchiveService implements ZipArchiveServiceInterface
      * @param FileValidation $fileValidation Validation rules to apply.
      * @return bool True if validation passes, false otherwise.
      */
-    private function validateFile(string $filePath, FileValidation $fileValidation): bool
+    private function validateFile(string $filePath, FileValidation $fileValidation): void
     {
-        $validationPassed = true;
-        $fileValidation->validate('file', $filePath, function ($message) use (&$validationPassed) {
+        logger($filePath);
+        $fileValidation->validate('file', $filePath, function ($message) use ($filePath) {
             logger($message);
-            $validationPassed = false;
+            unlink($filePath);
         });
-        return $validationPassed;
     }
 }
