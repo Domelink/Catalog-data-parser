@@ -45,8 +45,12 @@ final class DownloadFile extends Command
 
         if ($this->httpService->downloadFile($url, $zipPath)) {
             $filePath = $this->zipArchiveService->processZip($zipPath, $extractPath, $fileValidation);
-            ParseDataToCatalogJob::dispatch($filePath);
-            $this->info('File extracted successfully, started to dispatch job.');
+            if ($filePath != '') {
+                ParseDataToCatalogJob::dispatch($filePath);
+                $this->info('File extracted successfully, started to dispatch job.');
+            } else {
+                $this->info('Failed to download xlsx file.');
+            }
         } else {
             $this->error('Failed to download ZIP file.');
         }
