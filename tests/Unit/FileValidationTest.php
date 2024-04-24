@@ -3,19 +3,19 @@
 namespace Tests\Unit;
 
 use Tests\TestCase;
-use App\Rules\FileValidation;
+use App\Rules\FileSizeValidation;
+use App\Rules\FileNameValidation;
 
 final class FileValidationTest extends TestCase
 {
     public function testItFailsForMaxFileSize()
     {
-        $testFilename = 'temporaryfile.xlsx';
         $testFileSize = 1024 * 1024 * 5 + 1;
 
-        $rule = new FileValidation(5120);
+        $rule = new FileSizeValidation(5120);
         $failureMessage = '';
 
-        $rule->validate($testFilename, $testFileSize, function ($message) use (&$failureMessage) {
+        $rule->validate('fileSize', $testFileSize, function ($message) use (&$failureMessage) {
             $failureMessage = $message;
         });
 
@@ -25,12 +25,11 @@ final class FileValidationTest extends TestCase
     public function testItFailsForNonXlsxFiles()
     {
         $testFilename = 'test_file.txt';
-        $testFileSize = 1024 * 10;
 
-        $rule = new FileValidation(5120);
+        $rule = new FileNameValidation();
         $failureMessage = '';
 
-        $rule->validate($testFilename, $testFileSize, function ($message) use (&$failureMessage) {
+        $rule->validate('fileName', $testFilename, function ($message) use (&$failureMessage) {
             $failureMessage = $message;
         });
 

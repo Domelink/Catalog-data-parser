@@ -3,46 +3,41 @@
 namespace App\Services;
 
 use ZipArchive;
-use App\Rules\FileValidation;
+use App\Rules\FileNameValidation;
+use App\Rules\FileSizeValidation;
+use App\Traits\FileValidationTrait;
 use App\Interfaces\ZipArchiveServiceInterface;
 
 final readonly class ZipArchiveService implements ZipArchiveServiceInterface
 {
-    public function processZip(string $zipPath, string $extractPath, FileValidation $fileValidation): string
+    use FileValidationTrait;
+
+    public function processZip(string $zipPath, string $extractPath, FileSizeValidation $fileSizeValidation, FileNameValidation $fileNameValidation): ?string
     {
-        $filePath = '';
+        $filePath = null;
         $zip = new ZipArchive;
         if ($zip->open($zipPath) === TRUE) {
+            $fileExtracted = false;
+
             for ($i = 0; $i < $zip->numFiles; $i++) {
                 $stat = $zip->statIndex($i);
                 $filename = $stat['name'];
                 $fileSize = $stat['size'];
 
-                if ($this->validateFile($filename, $fileSize, $fileValidation)) {
-                    $zip->extractTo($extractPath, $filename);
-                }
+                $fullPath = $extractPath . '/' . $filename;
 
-                $filePath = $extractPath . '/' . $filename;
+                if ($this->validateFileSize($fileSize, $fileSizeValidation) && $this->validateFileName($filename, $fileNameValidation)) {
+                    $zip->extractTo($extractPath, $filename);
+                    $fileExtracted = true;
+                    $filePath = $fullPath;
+                }
             }
+
             $zip->close();
             unlink($zipPath);
-        }
-        return $filePath;
-    }
 
-    /**
-     * Validates the file using the provided validation rules.
-     *
-     * @param FileValidation $fileValidation Validation rules to apply.
-     * @return bool True if validation passes, false otherwise.
-     */
-    private function validateFile($filename, $fileSize, FileValidation $fileValidation): bool
-    {
-        $validationPassed = true;
-        $fileValidation->validate($filename, $fileSize, function ($message) use (&$validationPassed) {
-            logger($message);
-            $validationPassed = false;
-        });
-        return $validationPassed;
+            return $fileExtracted ? $filePath : null;
+        }
+        return null;
     }
 }
